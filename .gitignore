@@ -1,0 +1,26 @@
+# Node modules
+node_modules/
+
+# Log files
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv environment files
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+serviceAccountKey.json
+
