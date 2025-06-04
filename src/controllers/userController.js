@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs');
 const { db, userProfileBucket } = require('../config/firebase');
 const { uploadFile, deleteFile } = require('../utils/storage');
 
@@ -25,6 +24,44 @@ const getAllUsers = async (req, res) => {
     res.status(500).json({ error: 'Failed to get users' });
   }
 };
+
+// Add New User (Registrasi)
+const createUserProfile = async (req, res) => {
+  try {
+    const { userId, name, email, phone = '', address = '' } = req.body;
+
+    if (!userId || !name || !email) {
+      return res.status(400).json({ error: 'userId, name, dan email wajib diisi' });
+    }
+
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      return res.status(200).json({ message: 'Profil sudah ada', data: userDoc.data() });
+    }
+
+    const userData = {
+      name,
+      email,
+      phone,
+      address,
+      role: 'user', // default role untuk user
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await db.collection('users').doc(userId).set(userData);
+
+    res.status(201).json({
+      success: true,
+      message: 'User profile berhasil dibuat',
+      data: { id: userId, ...userData }
+    });
+  } catch (error) {
+    console.error('Error membuat user profile:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 
 // Get user profile
@@ -101,48 +138,6 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-// Change user password
-const changeUserPassword = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { currentPassword, newPassword } = req.body;
-
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Current password and new password are required' });
-    }
-
-    const userRef = db.collection('users').doc(userId);
-    const doc = await userRef.get();
-
-    if (!doc.exists) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    const userData = doc.data();
-
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.password);
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({ error: 'Current password is incorrect' });
-    }
-
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-
-    await userRef.update({
-      password: hashedNewPassword,
-      updatedAt: new Date()
-    });
-
-    res.json({
-      success: true,
-      message: 'Password changed successfully'
-    });
-  } catch (error) {
-    console.error('Error changing password:', error);
-    res.status(500).json({ error: 'Failed to change password' });
-  }
-};
 
 // Get user loan history
 const getUserLoanHistory = async (req, res) => {
@@ -218,9 +213,9 @@ const getUserCurrentLoans = async (req, res) => {
 
 module.exports = {
   getAllUsers,
+  createUserProfile,
   getUserProfile,
   updateUserProfile,
-  changeUserPassword,
   getUserLoanHistory,
   getUserCurrentLoans
 };

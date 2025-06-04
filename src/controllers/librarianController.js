@@ -22,6 +22,7 @@ const initializeDefaultLibrarian = async () => {
         password: hashedPassword,
         phone: '',
         address: '',
+        bio: '',
         profileImageUrl: null,
         role: 'librarian',
         createdAt: new Date(),
@@ -67,7 +68,7 @@ const getLibrarianProfile = async (req, res) => {
 const updateLibrarianProfile = async (req, res) => {
   try {
     const { librarianId } = req.params;
-    const { name, email, phone, address } = req.body;
+    const { name, email, phone, address, bio } = req.body;
 
     const librarianRef = db.collection('librarians').doc(librarianId);
     const doc = await librarianRef.get();
@@ -93,6 +94,7 @@ const updateLibrarianProfile = async (req, res) => {
       email: email || currentData.email,
       phone: phone || currentData.phone,
       address: address || currentData.address,
+      bio: bio || currentData.bio,
       profileImageUrl,
       updatedAt: new Date()
     };

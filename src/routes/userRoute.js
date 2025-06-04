@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const {
   getAllUsers,
+  createUserProfile,
   getUserProfile,
   updateUserProfile,
   changeUserPassword,
@@ -30,9 +31,9 @@ router.get('/', getAllUsers);
 
 
 // User profile routes
+router.post('/register', createUserProfile);
 router.get('/profile/:userId', getUserProfile);
 router.put('/profile/:userId', upload.single('profileImage'), updateUserProfile);
-router.put('/password/:userId', changeUserPassword);
 
 // User loan routes
 router.get('/loans/:userId', getUserLoanHistory);

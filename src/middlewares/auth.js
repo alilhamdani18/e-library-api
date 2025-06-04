@@ -1,29 +1,65 @@
-const { admin } = require('../config/firebase');
+const { auth, db } = require('../config/firebase');
 
-// Verify Firebase token (untuk authentikasi jika diperlukan di masa depan)
-const verifyToken = async (req, res, next) => {
+// Middleware autentikasi
+const authenticate = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
     
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ 
+        status: 'error', 
+        message: 'Akses ditolak. Token tidak tersedia' 
+      });
     }
-
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    const token = authHeader.split(' ')[1];
+    
+    const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
+    
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+    console.error('Error autentikasi:', error);
+    return res.status(401).json({ 
+      status: 'error', 
+      message: 'Akses ditolak. Token tidak valid' 
+    });
   }
 };
 
-// Simple middleware untuk logging (opsional)
-const logRequest = (req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
+// Middleware untuk memeriksa peran pustakawan
+const isLibrarian = async (req, res, next) => {
+  try {
+    const userRef = db.collection('users').doc(req.user.uid);
+    const userDoc = await userRef.get();
+    
+    if (!userDoc.exists) {
+      return res.status(404).json({ 
+        status: 'error', 
+        message: 'Pengguna tidak ditemukan' 
+      });
+    }
+    
+    const userData = userDoc.data();
+    
+    if (userData.role !== 'librarian') {
+      return res.status(403).json({ 
+        status: 'error', 
+        message: 'Akses ditolak. Hanya pustakawan yang diizinkan' 
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Error memeriksa peran:', error);
+    return res.status(500).json({ 
+      status: 'error', 
+      message: 'Terjadi kesalahan saat memeriksa peran pengguna' 
+    });
+  }
 };
 
 module.exports = {
-  verifyToken,
-  logRequest
+  authenticate,
+  isLibrarian
 };
